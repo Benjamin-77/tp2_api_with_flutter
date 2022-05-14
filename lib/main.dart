@@ -1,26 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class Album {
-  final int userId;
-  final int id;
-  final String title;
+  String? userId;
+  int? id;
+  String? title;
 
-  const Album({
-    required this.userId,
-    required this.id,
-    required this.title,
-  });
+  Album({this.userId, this.id, this.title});
 
-  factory Album.fromJson(Map<String, dynamic> json) {
-    return Album(
-      userId: json['userId'],
-      id: json['id'],
-      title: json['title'],
-    );
+  Album.fromJson(Map<String, dynamic> json) {
+    userId = json['userId'];
+    id = json['id'];
+    title = json['title'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['userId'] = this.userId;
+    data['id'] = this.id;
+    data['title'] = this.title;
+    return data;
   }
 }
 
@@ -35,31 +39,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool loading = true;
+  int count=0;
 
   List<Album> albums =[];
 
   Future<List<Album>> _getAlbums() async{
 
-    final response = await http
-        .get(Uri.parse('https://ifri.raycash.net/getalbum/50'));
-
-    if (response.statusCode == 200) {
+    final response = await http.get(Uri.parse('https://ifri.raycash.net/getalbum/50'));
       var jsons = json.decode(response.body);
+      setState(() {
+        for(var i in jsons){
+          count=jsons.length;
+          albums.add(Album.fromJson(i));
+        }
+      });
 
-      for(var i in jsons){
-        albums.add(Album(userId: i['userId'], id: i['id'], title: i['title']));
-      }
-
-      loading =false;
       return albums;
-
-    } else {
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
-      throw Exception('Failed to load album');
-    }
-
-
   }
 
   @override
@@ -79,23 +74,20 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Fetch Data from API'),
         ),
-        body: Center(
-          child:ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: albums.length,
-              itemBuilder: (BuildContext context, int index) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("UserId : "+albums[index].userId.toString()),
-                    Text("Id : "+albums[index].id.toString()),
-                    Text("Title : "+albums[index].title),
-
-                    SizedBox(height:40),
-                  ],
-                );
-              }),
-        ),
+        body: ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: albums.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("UserId : "+albums[index].userId.toString()),
+                  Text("Id : "+albums[index].id.toString()),
+                  Text("Title : "+albums[index].title.toString()),
+                  SizedBox(height:40),
+                ],
+              );
+            }),
       ),
     );
   }
